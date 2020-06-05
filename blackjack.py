@@ -105,17 +105,64 @@ deck = shuffle(deck)
 
 counter = 0
 playing = True
-dealer = Player(p_type = "D",chips = 1000000)
-player = Player(p_type = "H",name = "Player1")
+dealer = Player(p_type = "D",name = "Dealer",chips = 1000000)
+player_name = input("Type in your name\n")
+player = Player(p_type = "H",name = player_name)
+winner = ''
+wager = 0
 
 while playing:
 
+	tmp_wager = input("Input your wager, current chips = {}\n".format(player.chips))
+	wager = int(tmp_wager)
 	deal(player, dealer, deck, counter)
 	print(player)
 	print(dealer)
+	player_move = ''
+	while player_move != 's':
+		player_move = input("Enter \'h\' to hit, \'s\' to stand\n")
+		if player_move.lower() == 'h':
+			hit(player, deck, counter)
+		if player_move == 's':
+			print("{} stands\n".format(player.name))
+		print(player)
+		print(dealer)
+		if player.total_val > 21:
+			print("{} busts, dealer wins\n".format(player.name))
+			winner = 'd'
+			break
+
+	if player.total_val < 22:
+		while dealer.total_val < 17:
+			hit(dealer)
+			print(player)
+			print(dealer)
+			if player.total_val > 21:
+				print("Dealer busts, player wins\n")
+				winner = 'p'
+				break
+
+	if player.total_val > dealer.total_val:
+		winner = 'p'
+	elif dealer.total_val > player.total_val:
+		winner = 'd'
+	else:
+		winner = 't'
+
+	if winner == 'p':
+		player.chips += wager
+		print("{} wins this round. Your new chip total = {}\n".format(player.name, player.chips))
+	if winner == 'd':
+		player.chips -= wager
+		print("Dealer wins this round. Your new chip total = {}\n".format(player.chips))
+	if winner == 't':
+		print("Tie\n")
 
 
+	x = input("Enter \'q\' to quit, any other input to continue\n")
+	if x.lower() == 'q':
+		playing = False
 
+	clear_hands(player, dealer)
 
-
-	playing = False
+print("Thanks for playing\n")
