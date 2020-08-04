@@ -5,8 +5,11 @@ class Card:
 	def __init__(self,suit,value):
 		self.suit = suit
 		self.value = value
+		self.hidden = False
 
 	def __repr__(self):
+		if self.hidden == True:
+			return "Hidden Card"
 		val = self.determine_face()
 		return "{} of {}".format(val, self.suit)
 
@@ -36,15 +39,16 @@ class Player:
 	def __repr__(self):
 		out = ""
 		if self.p_type == "D":
-			out += "Dealer Hand\nUnknown card\n"
-			for x in self.hand[1:len(self.hand):1]:
+			out += "Dealer Hand\n"
+			for x in self.hand:
 				out += x.__repr__() + "\n"
 			out += "\n"
 		else:
 			out += "{}'s Hand\n".format(self.name)
-			for x in self.hand[0:len(self.hand):1]:
+			for x in self.hand:
 				out += x.__repr__() + "\n"
 			out += "\n"
+			out += "Total = {}\n".format(player.total_val)
 		return out
 
 def init_deck(deck):
@@ -67,14 +71,22 @@ def deal(player, dealer, deck, counter):
 			counter = 0
 			shuffle(deck)
 		player.hand.append(deck[counter])
-		player.total_val += deck[counter].value
+		if deck[counter].value <= 10:
+			player.total_val += deck[counter].value
+		else:
+			player.total_val += 10
 		counter += 1
 		if counter >= 52:
 			counter = 0
 			shuffle(deck)
 		dealer.hand.append(deck[counter])
-		dealer.total_val += deck[counter].value
+		if deck[counter].value <= 10:
+			dealer.total_val += deck[counter].value
+		else:
+			dealer.total_val += 10
 		counter += 1
+	dealer.hand[0].hidden = True
+	return counter
 
 
 def clear_hands(player, dealer):
@@ -89,9 +101,12 @@ def hit(player, deck, counter):
 		counter = 0
 		shuffle(deck)
 	player.hand.append(deck[counter])
-	player.total_val += deck[counter].value
+	if deck[counter].value <= 10:
+		player.total_val += deck[counter].value
+	else:
+		player.total_val += 10
 	print("{} hits, {}".format(player.name, deck[counter]))
-	counter += 1
+	return counter+1
 
 def play_hand(player, deck, counter):
 	x = input("Enter H to hit, or S to stay: ")
@@ -103,26 +118,26 @@ deck = []
 deck = init_deck(deck)
 deck = shuffle(deck)
 
-counter = 0
 playing = True
 dealer = Player(p_type = "D",name = "Dealer",chips = 1000000)
 player_name = input("Type in your name\n")
 player = Player(p_type = "H",name = player_name)
 winner = ''
 wager = 0
+counter = 0
 
 while playing:
 
 	tmp_wager = input("Input your wager, current chips = {}\n".format(player.chips))
 	wager = int(tmp_wager)
-	deal(player, dealer, deck, counter)
+	counter = deal(player, dealer, deck, counter)
 	print(player)
 	print(dealer)
 	player_move = ''
 	while player_move != 's':
 		player_move = input("Enter \'h\' to hit, \'s\' to stand\n")
 		if player_move.lower() == 'h':
-			hit(player, deck, counter)
+			counter = hit(player, deck, counter)
 		if player_move == 's':
 			print("{} stands\n".format(player.name))
 		print(player)
@@ -133,32 +148,35 @@ while playing:
 			break
 
 	if player.total_val < 22:
+		dealer.hand[0].hidden = False
 		while dealer.total_val < 17:
-			hit(dealer)
-			print(player)
-			print(dealer)
-			if player.total_val > 21:
+			counter = hit(dealer, deck, counter)
+			if dealer.total_val > 21:
 				print("Dealer busts, player wins\n")
 				winner = 'p'
 				break
 
-	if player.total_val > dealer.total_val:
-		winner = 'p'
-	elif dealer.total_val > player.total_val:
-		winner = 'd'
-	else:
-		winner = 't'
+	print(player)
+	print(dealer)
+	
+	if winner == '':
+		if player.total_val > dealer.total_val:
+			winner = 'p'
+		elif dealer.total_val > player.total_val:
+			winner = 'd'
+		else:
+			winner = 't'
 
 	if winner == 'p':
 		player.chips += wager
 		print("{} wins this round. Your new chip total = {}\n".format(player.name, player.chips))
 	if winner == 'd':
 		player.chips -= wager
-		print("Dealer wins this round. Your new chip total = {}\n".format(player.chips))
+		print("Dealer wins this round with {}. Your new chip total = {}\n".format(dealer.total_val, player.chips))
 	if winner == 't':
 		print("Tie\n")
 
-
+	winner = ''
 	x = input("Enter \'q\' to quit, any other input to continue\n")
 	if x.lower() == 'q':
 		playing = False
